@@ -28,7 +28,7 @@ local function getItem(_, name)
 
     name = name:lower()
 
-    if name:sub(0, 7) == 'weapon_' then
+    if shared.framework ~= 'rsg' and name:sub(0, 7) == 'weapon_' then
         name = name:upper()
     end
 
@@ -159,6 +159,7 @@ local function setItemDurability(item, metadata)
 end
 
 local TriggerEventHooks = require 'modules.hooks.server'
+local RSGBridge = shared.framework == 'rsg' and require 'modules.bridge.rsg.shared'
 
 ---@param inv inventory
 ---@param item OxServerItem
@@ -215,6 +216,10 @@ function Items.Metadata(inv, item, metadata, count)
 		if not metadata.durability then
 			metadata = setItemDurability(ItemList[item.name], metadata)
 		end
+	end
+
+	if RSGBridge and item.rsg then
+		metadata = RSGBridge.ensureMetadata(item, metadata)
 	end
 
 	if count > 1 and not item.stack then

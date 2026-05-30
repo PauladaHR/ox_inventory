@@ -309,12 +309,12 @@ local textPrompts = {
     evidence = {
         options = { icon = 'fa-box-archive' },
         message = ('**%s**  \n%s'):format(locale('open_police_evidence'),
-            locale('interact_prompt', GetControlInstructionalButton(0, 38, true):sub(3)))
+            locale('interact_prompt', "E"))
     },
     stash = {
         options = { icon = 'fa-warehouse' },
         message = ('**%s**  \n%s'):format(locale('open_stash'),
-            locale('interact_prompt', GetControlInstructionalButton(0, 38, true):sub(3)))
+            locale('interact_prompt', "E"))
     }
 }
 

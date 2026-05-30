@@ -196,7 +196,7 @@ local function refreshShops()
                     marker = client.shopmarker,
                     prompt = {
                         options = shop.icon and { icon = shop.icon } or shopPrompt,
-                        message = ('**%s**  \n%s'):format(label, locale('interact_prompt', GetControlInstructionalButton(0, 38, true):sub(3)))
+                        message = ('**%s**  \n%s'):format(label, locale('interact_prompt', "E"))
                     },
 					nearby = Utils.nearbyMarker,
 					blip = blip and createBlip(blip, coords)

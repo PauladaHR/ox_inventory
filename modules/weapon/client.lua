@@ -76,7 +76,7 @@ function Weapon.Equip(item, data, noWeaponAnim)
 
 	SetCurrentPedWeapon(playerPed, data.hash, true)
 	SetPedCurrentWeaponVisible(playerPed, true, false, false, false)
-	SetWeaponsNoAutoswap(true)
+	-- SetWeaponsNoAutoswap(true)
 	SetPedAmmo(playerPed, data.hash, ammo)
 	SetTimeout(0, function() RefillAmmoInstantly(playerPed) end)
 

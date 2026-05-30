@@ -37,6 +37,11 @@ Citizen.CreateThreadNow(function()
         playerColumn = 'citizenid'
         vehicleTable = 'player_vehicles'
         vehicleColumn = 'id'
+    elseif shared.framework == 'rsg' then
+        playerTable = 'players'
+        playerColumn = 'citizenid'
+        vehicleTable = GetConvar('inventory:rsgvehicletable', 'player_vehicles')
+        vehicleColumn = GetConvar('inventory:rsgvehiclecolumn', 'id')
     else
         return
     end
@@ -84,9 +89,9 @@ Citizen.CreateThreadNow(function()
         -- end
     end
 
-    result = MySQL.query.await(('SHOW COLUMNS FROM `%s`'):format(vehicleTable))
+    success, result = pcall(MySQL.query.await, ('SHOW COLUMNS FROM `%s`'):format(vehicleTable))
 
-    if result then
+    if success and result then
         local glovebox, trunk
 
         for i = 1, #result do
@@ -105,6 +110,8 @@ Citizen.CreateThreadNow(function()
         if not trunk then
             MySQL.query(('ALTER TABLE `%s` ADD COLUMN `trunk` LONGTEXT NULL'):format(vehicleTable))
         end
+    elseif shared.framework ~= 'rsg' then
+        warn(('failed to inspect vehicle table `%s`; vehicle inventories may not persist'):format(vehicleTable))
     end
 
     success, result = pcall(MySQL.scalar.await, ('SELECT inventory FROM `%s`'):format(playerTable))

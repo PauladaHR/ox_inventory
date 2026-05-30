@@ -132,13 +132,13 @@ function Utils.WeaponWheel(state, override)
     end
 
     EnableWeaponWheel = state
-    SetWeaponsNoAutoswap(not state)
-    SetWeaponsNoAutoreload(not state)
+    -- SetWeaponsNoAutoswap(not state)
+    -- SetWeaponsNoAutoreload(not state)
 
-    if client.suppresspickups then
-        -- CLEAR_PICKUP_REWARD_TYPE_SUPPRESSION | SUPPRESS_PICKUP_REWARD_TYPE
-        return state and N_0x762db2d380b48d04(rewardTypes) or N_0xf92099527db8e2a7(rewardTypes, true)
-    end
+    -- if client.suppresspickups then
+    --     -- CLEAR_PICKUP_REWARD_TYPE_SUPPRESSION | SUPPRESS_PICKUP_REWARD_TYPE
+    --     return state and N_0x762db2d380b48d04(rewardTypes) or N_0xf92099527db8e2a7(rewardTypes, true)
+    -- end
 end
 
 exports('weaponWheel', function (state)
@@ -146,16 +146,16 @@ exports('weaponWheel', function (state)
 end)
 
 function Utils.CreateBlip(settings, coords)
-    local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
-    SetBlipSprite(blip, settings.id)
-    SetBlipDisplay(blip, 4)
-    SetBlipScale(blip, settings.scale)
-    SetBlipColour(blip, settings.colour)
-    SetBlipAsShortRange(blip, true)
-    BeginTextCommandSetBlipName(settings.name)
-    EndTextCommandSetBlipName(blip)
+    -- local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
+    -- SetBlipSprite(blip, settings.id)
+    -- SetBlipDisplay(blip, 4)
+    -- SetBlipScale(blip, settings.scale)
+    -- SetBlipColour(blip, settings.colour)
+    -- SetBlipAsShortRange(blip, true)
+    -- BeginTextCommandSetBlipName(settings.name)
+    -- EndTextCommandSetBlipName(blip)
 
-    return blip
+    -- return blip
 end
 
 ---Takes OxTargetBoxZone or legacy zone data (PolyZone) and creates a zone.
@@ -224,19 +224,19 @@ function Utils.nearbyMarker(point)
 end
 
 function Utils.blurIn()
-    if IsScreenblurFadeRunning() then
-        DisableScreenblurFade()
-    end
+    -- if IsScreenblurFadeRunning() then
+    --     DisableScreenblurFade()
+    -- end
 
-    TriggerScreenblurFadeIn(100)
+    -- TriggerScreenblurFadeIn(100)
 end
 
 function Utils.blurOut()
-    if IsScreenblurFadeRunning() then
-        DisableScreenblurFade()
-    end
+    -- if IsScreenblurFadeRunning() then
+    --     DisableScreenblurFade()
+    -- end
 
-    TriggerScreenblurFadeOut(250)
+    -- TriggerScreenblurFadeOut(250)
 end
 
 ---@param serverID number

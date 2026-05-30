@@ -59,71 +59,38 @@ local function normalisePlayerData(player)
     return playerData
 end
 
-local function setupPlayer(player)
-    local source = (player.PlayerData and player.PlayerData.source) or player.source
+local function setupPlayer(Player)
+    local PlayerData = normalisePlayerData(Player)
+    server.setPlayerInventory(PlayerData, PlayerData.items)
 
-    if source then
-        player.Functions.AddItem = function(item, amount, slot, info, reason, notify)
-            local success = Inventory.AddItem(source, item, amount or 1, info, slot)
+        -- Add player methods FIRST before doing anything else
+    RSGCore.Functions.AddPlayerMethod(Player.PlayerData.source, "AddItem", function(item, amount, slot, info)
+        return Inventory.AddItem(Player.PlayerData.source, item, amount, info, slot)
+    end)
 
-            if success and notify then
-                TriggerClientEvent('rsg-inventory:client:ItemBox', source, RSGCore.Shared.Items[item], 'add', amount or 1)
-            end
+    RSGCore.Functions.AddPlayerMethod(Player.PlayerData.source, "RemoveItem", function(item, amount, slot)
+        return Inventory.RemoveItem(Player.PlayerData.source, item, amount, nil, slot)
+    end)
 
-            return success
-        end
+    RSGCore.Functions.AddPlayerMethod(Player.PlayerData.source, "GetItemBySlot", function(slot)
+        return setItemCompatibilityProps(Inventory.GetSlot(Player.PlayerData.source, slot))
+    end)
 
-        player.Functions.RemoveItem = function(item, amount, slot, reason, isMove, notify)
-            local success = Inventory.RemoveItem(source, item, amount or 1, nil, slot)
+    RSGCore.Functions.AddPlayerMethod(Player.PlayerData.source, "GetItemByName", function(itemName)
+        return setItemCompatibilityProps(Inventory.GetSlotWithItem(Player.PlayerData.source, itemName))
+    end)
 
-            if success and notify then
-                TriggerClientEvent('rsg-inventory:client:ItemBox', source, RSGCore.Shared.Items[item], 'remove', amount or 1)
-            end
+    RSGCore.Functions.AddPlayerMethod(Player.PlayerData.source, "GetItemsByName", function(itemName)
+        return setItemCompatibilityProps(Inventory.GetSlotsWithItem(Player.PlayerData.source, itemName))
+    end)
 
-            return success
-        end
+    RSGCore.Functions.AddPlayerMethod(Player.PlayerData.source, "ClearInventory", function(filterItems)
+        Inventory.Clear(Player.PlayerData.source, filterItems)
+    end)
 
-        player.Functions.SetInventory = function(items)
-            local inv = Inventory(source)
-
-            if not inv then return false end
-
-            local inventory, totalWeight = server.convertInventory(source, items)
-            inv.items = inventory
-            inv.weight = totalWeight
-            inv.changed = true
-
-            local slots = {}
-            local index = 0
-
-            for slotId = 1, inv.slots do
-                index += 1
-                slots[index] = { item = inventory[slotId] or { slot = slotId }, inventory = inv.id }
-            end
-
-            inv:syncSlotsWithClients(slots, true)
-            server.syncInventory(inv)
-
-            return true
-        end
-
-        player.Functions.GetItemBySlot = function(slot)
-            local inv = Inventory(source)
-            local item = inv and inv.items[tonumber(slot)]
-
-            return item and RSGBridge.toRsgSlot(item, Items(item.name))
-        end
-
-        player.Functions.GetItemByName = function(itemName)
-            local inv = Inventory(source)
-            local slot = inv and Inventory.GetSlotWithItem(inv, itemName)
-
-            return slot and RSGBridge.toRsgSlot(slot, Items(slot.name))
-        end
-    end
-
-    local playerData = normalisePlayerData(player)
-    server.setPlayerInventory(playerData, playerData.items)
+    RSGCore.Functions.AddPlayerMethod(Player.PlayerData.source, "SetInventory", function(items)
+        return exports.ox_inventory:setPlayerInventory(Player.PlayerData.source, items)
+    end)
 end
 
 local function backupRsgInventories()
@@ -338,3 +305,194 @@ function server.isPlayerBoss(playerId, group)
 
     return Hiro.GetUserHierarchy(passport, group) == 1
 end
+
+
+local function export(exportName, func)
+    AddEventHandler(('__cfx_export_%s_%s'):format(string.strsplit('.', exportName, 2)), function(setCB)
+        setCB(func or function()
+            error(("export '%s' is not supported when using ox_inventory"):format(exportName))
+        end)
+    end)
+end
+
+---Imagine if somebody who uses qb/qbox would PR these functions.
+export('rsg-inventory.LoadInventory', function(playerId)
+    if Inventory(playerId) then return end
+
+    local player = RSGCore.Functions.GetPlayer(playerId)
+
+    if player then
+        setupPlayer(player)
+
+        return Inventory(playerId).items
+    end
+end)
+
+export('rsg-inventory.SaveInventory', function(playerId)
+    if type(playerId) ~= 'number' then
+        TypeError('playerId', 'number', type(playerId))
+    end
+
+    Inventory.Save(playerId)
+end)
+
+export('rsg-inventory.SetInventory', function(invId, items)
+    return exports.ox_inventory:setPlayerInventory(invId, items)
+end)
+
+export('rsg-inventory.SetItemData')
+export('rsg-inventory.UseItem')
+export('rsg-inventory.GetSlotsByItem')
+export('rsg-inventory.GetFirstSlotByItem')
+
+export('rsg-inventory.GetItemBySlot', function(playerId, slotId)
+    return Inventory.GetSlot(playerId, slotId)
+end)
+
+export('rsg-inventory.GetTotalWeight', function(playerId)
+    local inventory = exports.ox_inventory:GetInventory(playerId)
+    return inventory and inventory.weight or 0
+end)
+
+export('rsg-inventory.GetItemsByName', function(playerId, itemName)
+    local items = Inventory.GetSlotsWithItem(playerId, itemName)
+    if not items then return {} end
+
+    -- Convert to RSG format with compatibility props
+    local result = {}
+    for i, item in pairs(items) do
+        if item then
+            item.info = item.metadata
+            item.amount = item.count
+            result[i] = item
+        end
+    end
+    return result
+end)
+
+export('rsg-inventory.GetSlots')
+export('rsg-inventory.GetItemCount')
+
+export('rsg-inventory.CanAddItem', function(playerId, itemName, amount)
+    return (Inventory.CanCarryAmount(playerId, itemName) or 0) >= amount
+end)
+
+export('rsg-inventory.ClearInventory', function(playerId, filter)
+    Inventory.Clear(playerId, filter)
+end)
+
+export('rsg-inventory.CloseInventory', function(playerId, inventoryId)
+    local playerInventory = Inventory(playerId)
+
+    if not playerInventory then return end
+
+    local inventory = Inventory(playerInventory.open)
+
+    if inventory and (inventoryId == inventory.id or not inventoryId) then
+        playerInventory:closeInventory()
+    end
+end)
+
+export('rsg-inventory.OpenInventory', function(playerId, invId, data)
+    if data and data.maxweight and data.slots then
+        exports.ox_inventory:RegisterStash(invId, data.label or invId, data.slots, data.maxweight)
+    end
+    return exports.ox_inventory:forceOpenInventory(playerId, 'stash', invId)
+end)
+
+export('rsg-inventory.OpenInventoryById', function(playerId, targetId)
+    return exports.ox_inventory:forceOpenInventory(playerId, 'player', targetId)
+end)
+
+local pendingShops = {}
+
+export('rsg-inventory.CreateShop', function(shopData)
+    local oxShopData = {
+        name = shopData.name,
+        inventory = {},
+        groups = shopData.groups,
+    }
+
+    if shopData.items then
+        for i, item in pairs(shopData.items) do
+            oxShopData.inventory[i] = {
+                name = item.name,
+                price = item.price,
+                count = item.amount or item.count or 1
+            }
+        end
+    end
+
+    pendingShops[shopData.name] = oxShopData
+    return true
+end)
+
+export('rsg-inventory.OpenShop', function(playerId, shopName)
+    local player = RSGCore.Functions.GetPlayer(playerId)
+    if not player then return false end
+
+    local shopData = pendingShops[shopName]
+    if not shopData then return false end
+
+    local ped = GetPlayerPed(playerId)
+    local coords = GetEntityCoords(ped)
+
+    -- Add the player's current location to the shop data
+    shopData.locations = {{
+        coords = coords,
+        size = vec3(2, 2, 2)
+    }}
+
+    exports.ox_inventory:RegisterShop(shopName, shopData)
+
+    TriggerClientEvent('rsg-inventory:openShop', playerId, {type = shopName, id = 1})
+    return true
+end)
+export('rsg-inventory.CreateInventory', function(invId, data)
+    if data and data.maxweight and data.slots then
+        exports.ox_inventory:RegisterStash(invId, data.label or invId, data.slots, data.maxweight)
+    end
+end)
+
+--- Check if a shop exists in the registry.
+--- @param shopName string Name of the shop
+--- @return boolean True if the shop exists, false otherwise
+export('rsg-inventory.DoesShopExist', function(shopName)
+        if type(shopName) ~= "string" then return false end
+    return pendingShops and pendingShops[shopName] ~= nil
+end)
+
+export('rsg-inventory.AddItem', function(invId, itemName, amount, slot, metadata, reason)
+    if exports.ox_inventory:CanCarryItem(invId, itemName, amount, metadata) then
+        exports.ox_inventory:AddItem(invId, itemName, amount, metadata, slot)
+        return true
+    end
+    return false
+end)
+
+export('rsg-inventory.RemoveItem', function(invId, itemName, amount, slot, reason)
+    if exports.ox_inventory:RemoveItem(invId, itemName, amount, nil, slot) then
+        return true
+    else
+        warn('Failed to remove item:', itemName)
+        return false
+    end
+end)
+
+export('rsg-inventory.HasItem', function(items, amount)
+    amount = amount or 1
+
+    local count = exports.ox_inventory:Search('count', items)
+
+    if type(items) == 'table' and type(count) == 'table' then
+        for _, v in pairs(count) do
+            if v < amount then
+                return false
+            end
+        end
+
+        return true
+    end
+
+    return count >= amount
+end)

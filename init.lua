@@ -96,7 +96,7 @@ else
         weaponnotify = GetConvarBool('inventory:weaponnotify', true),
         imagepath = GetConvar('inventory:imagepath', 'nui://ox_inventory/web/images'),
         dropprops = GetConvarBool('inventory:dropprops', false),
-        dropmodel = joaat(GetConvar('inventory:dropmodel', 'prop_med_bag_01b')),
+        dropmodel = joaat(GetConvar('inventory:dropmodel', 'p_bag01x')),
         weaponmismatch = GetConvarBool('inventory:weaponmismatch', true),
         ignoreweapons = json.decode(GetConvar('inventory:ignoreweapons', '[]')),
         suppresspickups = GetConvarBool('inventory:suppresspickups', true),
